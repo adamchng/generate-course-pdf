@@ -1,0 +1,204 @@
+<?php
+
+$CourseID = $_GET["CourseID"];
+
+if($CourseID == '') {
+	$CourseID = '130';
+}
+
+$location = $_GET["location"];
+if($location == '') {
+	$location = 'LIC';
+}
+
+require('functions.php');
+$link = dbconnect();
+
+
+$fpdflib = '/var/www/html/lib/fpdf151';
+require("$fpdflib/fpdf.php");
+require("pdf.php");
+
+$LocAdd = logoaddress($location);
+$Course = TitleAndHours($CourseID);
+$Description = Description($CourseID);
+$TA = TargetAudience($CourseID);
+$CO = CourseObjectives($CourseID);
+$CB = CourseBenefits($CourseID);
+$PreReq = PreReqs($CourseID);
+$NextStep = NextSteps($CourseID);
+$Exam = pdfExams($CourseID);
+$ParentOutline = ParentOutlines($CourseID);
+$Outline = Outlines($CourseID);
+
+## extends class FPDF
+class PDF extends FPDF {
+        function Footer() {
+                //Position at 1.5 cm from bottom
+                $this->SetY(-15);
+                //Arial italic 8
+                $this->SetFont('Arial','I',8);
+                //Text color in gray
+                //$this->SetTextColor(128);
+                //Page number
+                $this->Cell(0,10,'Page '.$this->PageNo().' of {nb}',0,0,'C');
+        }
+}
+
+$pdf=new PDF('P','mm','Letter');
+$pdf->Open();
+$pdf->AliasNbPages();
+$pdf->AddPage();
+#$pdf->SetMargins(50,50,10);
+
+## Our Address
+$pdf->Image('/var/www/html/crm/netcom_s.jpg',20,19,27,'JPG');
+$pdf->SetFont('Arial','B',16);
+
+$pdf->Cell(78,19,'',0,1);
+
+$pdf->Cell(40,5,'',0);
+$pdf->Cell(130,5,'NetCom Learning',0,1,'C');
+$pdf->SetFont('Arial','',10);
+
+$pdf->Cell(40,5,'',0);
+$pdf->Cell(130,5,"$LocAdd[0]",0,1,'C');
+$pdf->Cell(40,5,'',0);
+
+$pdf->Cell(130,5,"$LocAdd[1]",0,1,'C');
+$pdf->Cell(40,8,'',0,1);
+
+$pdf->Cell(10,5,'',0);
+$pdf->SetFont('Arial','BU',12);
+
+//$pdf->Cell(175,5,"$CourseID: $Course[CourseDesc] ($Course[Hours] hours)",1,1,'C');
+$pdf->MultiCell(175,5,"$CourseID: $Course[CourseDesc] ($Course[Hours] hours)");
+
+$pdf->Cell(10,2,'',0,1);
+
+$pdf->Cell(10,4,'',0);
+$pdf->SetFont('Arial','BU',10);
+$pdf->Cell(175,4,'Description',0,1,'L');
+$pdf->Cell(10,4,'',0);
+$pdf->SetFont('Arial','',10);
+$pdf->MultiCell(175,4,"$Description");
+
+$pdf->Cell(10,2,'',0,1);
+
+if(is_array($TA)) {
+	$pdf->Cell(10,4,'',0);
+	$pdf->SetFont('Arial','BU',10);
+	$pdf->Cell(175,4,'Target Audience',0,1,'L');
+
+	$pdf->SetFont('Arial','',10);
+	foreach($TA as $k => $v) {
+		$pdf->Cell(10,4,'',0);
+		$pdf->Cell(3,4,'*',0);
+		$pdf->MultiCell(172,4,"$v");
+	}
+	$pdf->Cell(10,2,'',0,1);
+}
+
+if(is_array($CB)) {
+	$pdf->Cell(10,4,'',0);
+	$pdf->SetFont('Arial','BU',10);
+	$pdf->Cell(175,4,'Benefits',0,1,'L');
+
+	$pdf->SetFont('Arial','',10);
+	foreach($CB as $k => $v) {
+        	$pdf->Cell(10,4,'',0);
+        	$pdf->Cell(3,4,'*',0);
+        	$pdf->MultiCell(172,4,"$v");
+	}
+	$pdf->Cell(10,2,'',0,1);
+}
+
+if(is_array($Exam)) {
+        $pdf->Cell(10,4,'',0);
+        $pdf->SetFont('Arial','BU',10);
+        $pdf->Cell(175,4,'Exams',0,1,'L');
+
+        $pdf->SetFont('Arial','',10);
+        foreach($Exam as $k => $v) {
+                $pdf->Cell(10,4,'',0);
+                $pdf->Cell(3,4,'*',0);
+                $pdf->MultiCell(172,4,"$k: $v");
+        }
+        $pdf->Cell(10,2,'',0,1);
+}
+
+if(is_array($CO)) {
+	$pdf->Cell(10,4,'',0);
+	$pdf->SetFont('Arial','BU',10);
+	$pdf->Cell(175,4,'Objectives',0,1,'L');
+	$pdf->Cell(10,4,'',0);
+	$pdf->SetFont('Arial','',10);
+	$pdf->Cell(175,4,'At the end of the course, students will be able to:',0,1,'L');
+
+	foreach($CO as $k => $v) {
+        	$pdf->Cell(10,4,'',0);
+        	$pdf->Cell(3,4,'*',0);
+        	$pdf->MultiCell(172,4,"$v");
+	}
+	$pdf->Cell(10,2,'',0,1);
+}
+
+if(is_array($PreReq)) {
+	$pdf->Cell(10,4,'',0);
+	$pdf->SetFont('Arial','BU',10);
+	$pdf->Cell(175,4,'Prerequisites Required',0,1,'L');
+
+	$pdf->SetFont('Arial','',10);
+	foreach($PreReq as $k => $v) {
+		$pdf->Cell(10,4,'',0);
+		$pdf->Cell(3,4,'*',0);
+		$pdf->MultiCell(172,4,"$k: $v");
+	}
+	$pdf->Cell(10,2,'',0,1);
+}
+
+if(is_array($NextStep)) {
+        $pdf->Cell(10,4,'',0);
+        $pdf->SetFont('Arial','BU',10);
+        $pdf->Cell(175,4,'Next Steps',0,1,'L');
+
+        $pdf->SetFont('Arial','',10);
+        foreach($NextStep as $k => $v) {
+                $pdf->Cell(10,4,'',0);
+                $pdf->Cell(3,4,'*',0);
+                $pdf->MultiCell(172,4,"$k: $v");
+        }
+        $pdf->Cell(10,2,'',0,1);
+}
+
+
+if(is_array($ParentOutline) && is_array($Outline)) {
+        $pdf->Cell(10,4,'',0);
+        $pdf->SetFont('Arial','BU',10);
+        $pdf->Cell(175,4,'Course Outline',0,1,'L');
+
+        $pdf->SetFont('Arial','',10);
+
+	ksort($Outline);
+	$numpoint = 1;
+       	foreach($Outline as $k => $v) {
+
+		if(array_key_exists($k,$ParentOutline)) {
+			# parent outline
+			$pdf->Cell(10,4,'',0);
+			$pdf->Cell(6,4,"$numpoint)",0);
+			$pdf->MultiCell(169,4,"$v");
+			$numpoint++;
+
+		} else {
+			# child outline - make it deeper
+               		$pdf->Cell(20,4,'',0);
+               		$pdf->Cell(3,4,'*',0);
+               		$pdf->MultiCell(162,4,"$v");
+		}
+       	}
+}
+
+$pdf->Output();
+
+?> 
